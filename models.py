@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -9,7 +9,6 @@ class Student(Base):
     
     id = Column(Integer, primary_key=True)
     name = Column(String)
-   
 
 class Group(Base):
     __tablename__ = 'groups'
@@ -17,31 +16,23 @@ class Group(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
   
-
-class Teachers(Base):
+class Teacher(Base):
     __tablename__ = 'teachers'
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
 
-
-class Subjects(Base):
+class Subject(Base):
     __tablename__ = 'subjects'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    teacher_id = Column(Integer, ForeignKey('teacher.id'))
+    teacher_id = Column(Integer, ForeignKey('teachers.id'))
     teacher = relationship('Teacher')
-
 
 class Grade(Base):
     __tablename__ = 'grades'
     id = Column(Integer, primary_key=True)
     student_id = Column(Integer, ForeignKey('students.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
-    score = Column(float)
-
-
-
-
-
-
+    score = Column(Float)
+    date = Column(Date)  
