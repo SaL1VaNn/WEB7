@@ -1,43 +1,91 @@
+
 from faker import Faker
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from models import Base, Student, Group, Teacher, Subject, Grade
-import random
+from datetime import date, datetime, timedelta
+from sqlalchemy import select
+from models import Teacher, Student, Discipline, Grade, Group, session
+from random import randint, choice
+
+group =  Group(name="Group")
 
 fake = Faker()
-# З'єднання з базою даних
-engine = create_engine('postgresql://SaL1VaNn:hetshot53@localhost:5432/Sali')
-# Створення таблиць
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-session = Session()
 
-for _ in range(30):
-    student = Student(name=fake.name())
-    session.add(student)
 
-group_names = ["Group A", "Group B", "Group C"]
-for group_name in group_names:
-    group = Group(name=group_name)
-    session.add(group)
 
-for _ in range(5):
-    teacher = Teacher(name=fake.name())
-    session.add(teacher)
+groups = ["grup N1", "grup N2", "grup N3"]
 
-subjects = ["Math", "Science", "History", "English", "Computer Science"]
-for subject_name in subjects:
-    teacher = random.choice(session.query(Teacher).all())
-    subject = Subject(name=subject_name, teacher=teacher)
-    session.add(subject)
+ 
+number_of_teachers = 5
+number_of_students = 40
+disciplines = [
+        "Subgect 1",
+        "Subgect 2",
+        "Subgect 3",
+        "Subgect 4",
+        "Subgect 5"
+    ]
 
-students = session.query(Student).all()
-subjects = session.query(Subject).all()
-for student in students:
-    for subject in subjects:
-        score = random.uniform(2.0, 5.0)
-        grade = Grade(student=student, subject=subject, score=score)
-        session.add(grade)
+def date_range(start: date, end: date) -> list:
+    result = []
+    current_date = start
+    while current_date <= end:
+        if current_date.isoweekday() < 6:
+            result.append(current_date)
+        current_date += timedelta(1)
+    return result
 
-# Збереження змін до бази даних
-session.commit()
+def seed_teachers():
+        for _ in range(number_of_teachers):
+            teacher = Teacher(fullname=fake.name())
+            session.add(teacher)
+        session.commit()
+
+def seed_disciplines():
+    teacher_ids = session.scalars(select(Teacher.id)).all()
+    for discipline in range(6):
+        session.add(Discipline(name=f'name of subject {discipline}', teacher_id=choice(teacher_ids)))
+    session.commit()
+
+def seed_groups():
+    for group in groups:
+        session.add(Group(name=group))
+    session.commit()
+
+def seed_students():
+    group_ids = session.scalars(select(Group.id)).all()
+    for _ in range(number_of_students):
+        student = Student(fullname=fake.name(), group_id=choice(group_ids))
+        session.add(student)
+    session.commit()
+
+def seed_grades():
+    # дата початку навчального процесу
+    start_date = datetime.strptime("2020-09-01", "%Y-%m-%d")
+    # дата закінчення навчального процесу
+    end_date = datetime.strptime("2021-05-25", "%Y-%m-%d")
+    d_range = date_range(start=start_date, end=end_date)
+    discipline_ids = session.scalars(select(Discipline.id)).all()
+    student_ids = session.scalars(select(Student.id)).all()
+
+    for d in d_range:  # пройдемося по кожній даті
+        random_id_discipline = choice(discipline_ids)
+        random_ids_student = [choice(student_ids) for _ in range(5)]
+        # проходимося списком "везучих" студентів, додаємо їх до результуючого списку
+        # і генеруємо оцінку
+        for student_id in random_ids_student:
+            grade = Grade(
+                grade=randint(1, 12),
+                date_of=d,
+                student_id=student_id,
+                discipline_id=random_id_discipline,
+            )
+            session.add(grade)
+    session.commit()
+
+
+if __name__ == "__main__":
+
+    seed_teachers()
+    seed_disciplines()
+    seed_groups()
+    seed_students()
+    seed_grades()
